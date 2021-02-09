@@ -9,15 +9,11 @@ How to configure a Raspberry Pi 4 as a home network router
 
 ## Software
 
-### Packages to Install
+### Preparing the boot media
 
-Install the following packages to run a DNS and DHCP server on the intranet and save and restore firewall rules:
-
-```
-$ sudo apt install dnsmasq dnsutils netfilter-persistent iptables-persistent
-```
-
-`dnsutils` contains the command `dig` that is useful for checking that domain name service queries work both for local and Internet addresses.   
+Download `raspbian_lite_latest.zip` from Raspberry Pi website.
+Burn the file on a MicroSD card with `Etcher`.
+Install card to the MicroSD card slot at the bottom of the Raspberry Pi.
 
 ### Raspberry Pi Configuration
 
@@ -27,6 +23,14 @@ $ sudo raspi-config
 ```
 
 Select the following options:
+
+5\. Localisation Options
+  - L3 Keyboard
+    - **select the proper keyboard layout**
+  - L2 Timezone
+    - **select the proper timezone**
+  - L4 WLAN Country
+    - **select the proper WLAN country**
 
 1\. System Options
   - S3 Password
@@ -38,18 +42,39 @@ Select the following options:
   - P2 SSH
     - **enable** remote command line access using SSH
 
-5\. Localisation Options
-  - L2 Timezone
-    - **select the proper timezone**
-
 6\. Advanced Options
+  - A1 Expand Filesystem
+    ** select this** to use all available storage space on your boot media
   - A4 Network Interface Names
     - **enable** predictable network interface names
     - this will make USB ethernet adapter with MAC address `d0:37:45:a7:7f:a3` appear as interface ´enxd03745a77fa3`
 
+### Packages to Install
+
+Upgrade packages to latest versions.
+
+```
+$ sudo apt update && sudo apt upgrade 
+
+```
+
+Install the following packages to run a DNS and DHCP server on the intranet and save and restore firewall rules:
+
+```
+$ sudo apt install dnsmasq dnsutils netfilter-persistent iptables-persistent screen
+```
+
+`dnsutils` contains the command `dig` that is useful for checking that domain name service queries work both for local and Internet addresses.   
+
+`screen` is useful for persisting a terminal connection.
+
+### Set up WiFi Access Point
+
+TODO
+
 ### Set up routing and IP masquerading
 
-Uncomment the following line on `/etc/sysctl.conf` or add file `/etc/sysctl.d/ip-routing.conf` with the following content:
+Uncomment the following line on `/etc/sysctl.conf` or add file `/etc/sysctl.d/ip-routing.conf` with the following content and reboot the machine.
 ```
 net.ipv4.ip_forward=1
 ```
@@ -80,7 +105,7 @@ interface enxd03745a77fa3
   static ip_address=10.10.0.1/24
 
 interface wlan0
-  static ip_address=10.100.0.1/24
+  static ip_address=10.10.0.1/24
   nohook wpa_supplicant
 ```
 
