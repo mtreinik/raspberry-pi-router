@@ -4,18 +4,39 @@ How to configure a Raspberry Pi 4 as a home network router
 
 ## Hardware
 
+Required:
 - Raspberry Pi 4
 - TP-LINK USB 3.0 Gigabit Ethernet adapter UE300
+- microSD card used as the boot disk (minimum capacity 8 GB)
+- Power source
 
-## Software
+Useful when setting up or troubleshooting:
+- Monitor with a micro HDMI cable
+- USB keyboard
 
-### Preparing the boot media
+### Set up the boot disk 
 
-Download `raspbian_lite_latest.zip` from Raspberry Pi website.
-Burn the file on a MicroSD card with `Etcher`.
-Install card to the MicroSD card slot at the bottom of the Raspberry Pi.
+1. Download `Raspberry Pi OS Lite` from the [Raspberry Pi website](https://www.raspberrypi.org/software/operating-systems/).
 
-### Raspberry Pi Configuration
+1. Install the image `raspbian_lite_latest.zip` on a microSD memory card with [balenaEtcher](https://www.balena.io/etcher/).
+
+
+### Connect the equipment
+
+1. Plug in the memory card to the microSD card slot. It is located on the bottom side of the Raspberry Pi at the end opposite to the USB connectors.
+
+1. Plug in the Ethernet adapter to a blue USB 3.0 connector,
+
+1. Plug in a monitor with a micro HDMI cable to either micro HDMI port.
+
+1. Plug in a USB keyboard to any available USB port.
+
+1. Plug in a power source to the USB-C connector.  
+
+
+## Set up the software
+
+### Configure the Raspberry Pi OS 
 
 Start the Raspberry Pi Software Configuration Tool:
 ```
@@ -49,7 +70,7 @@ Select the following options:
     - **enable** predictable network interface names
     - this will make USB ethernet adapter with MAC address `d0:37:45:a7:7f:a3` appear as interface ´enxd03745a77fa3`
 
-### Packages to Install
+### Upgrade and install packages
 
 Upgrade packages to latest versions.
 
@@ -68,16 +89,24 @@ $ sudo apt install dnsmasq dnsutils netfilter-persistent iptables-persistent scr
 
 `screen` is useful for persisting a terminal connection.
 
-### Set up WiFi Access Point
+### Configure WiFi access point
 
 TODO
 
-### Set up routing and IP masquerading
+### Enable IP forwarding 
 
-Uncomment the following line on `/etc/sysctl.conf` or add file `/etc/sysctl.d/ip-routing.conf` with the following content and reboot the machine.
+Uncomment the following line on `/etc/sysctl.conf` or add file `/etc/sysctl.d/ip-routing.conf` with the following content:
 ```
 net.ipv4.ip_forward=1
 ```
+
+Then run the following command to apply the new setting without rebooting: 
+
+```
+$ sudo sysctl --system
+```
+
+### Enable masquerading
 
 Add a postrouting rule to table `nat` of iptables to masquerade traffic from other interfaces as coming from `eth0`: 
 
@@ -94,6 +123,8 @@ Chain POSTROUTING (policy ACCEPT 4984 packets, 331K bytes)
  pkts bytes target     prot opt in     out     source               destination         
  5169  441K MASQUERADE  all  --  any    eth0    anywhere             anywhere
 ```
+
+### Configure local area network 
 
 Append DHCP client configuration to file `/etc/dhcpcd.conf`:
 
