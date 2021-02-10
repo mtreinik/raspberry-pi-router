@@ -1,6 +1,8 @@
 # raspberry-pi-router
 
-How to configure a Raspberry Pi 4 as a home network router
+## How to configure a Raspberry Pi 4 as a home network router
+
+
 
 ## Hardware
 
@@ -14,14 +16,14 @@ Useful when setting up or troubleshooting:
 - Monitor with a micro HDMI cable
 - USB keyboard
 
-### Set up the boot disk 
+### Initialize Boot disk 
 
 1. Download `Raspberry Pi OS Lite` from the [Raspberry Pi website](https://www.raspberrypi.org/software/operating-systems/).
 
 1. Install the image `raspbian_lite_latest.zip` on a microSD memory card with [balenaEtcher](https://www.balena.io/etcher/).
 
 
-### Connect the equipment
+### Connect peripherals
 
 1. Plug in the memory card to the microSD card slot. It is located on the bottom side of the Raspberry Pi at the end opposite to the USB connectors.
 
@@ -34,11 +36,11 @@ Useful when setting up or troubleshooting:
 1. Plug in a power source to the USB-C connector.  
 
 
-## Set up the software
+## Software
 
-### Configure the Raspberry Pi OS 
+### Raspberry Pi Software Configuration
 
-Start the Raspberry Pi Software Configuration Tool:
+Start the Raspberry Pi Software Configuration Tool `raspi-config`:
 ```
 $ sudo raspi-config
 ```
@@ -68,7 +70,7 @@ Select the following options:
     ** select this** to use all available storage space on your boot media
   - A4 Network Interface Names
     - **enable** predictable network interface names
-    - this will make USB ethernet adapter with MAC address `d0:37:45:a7:7f:a3` appear as interface ´enxd03745a77fa3`
+    - this will make a USB ethernet adapter with MAC address `d0:37:45:a7:7f:a3` appear as interface ´enxd03745a77fa3`
 
 ### Upgrade and install packages
 
@@ -126,12 +128,24 @@ Chain POSTROUTING (policy ACCEPT 4984 packets, 331K bytes)
 
 ### Configure local area network 
 
+Find out name of the external ethernet adapter with this command, which lists all network interfaces:
+
+```
+$ ip a
+...
+3: enxd03745a77fa3: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc pfifo_fast state DOWN group default qlen 1000
+...
+```
+
+The name should have prefix `enx`. In the example above the interface name is `enxd03745a77fa3`
+
 Append DHCP client configuration to file `/etc/dhcpcd.conf`:
 
 ```
 interface eth0
   static domain_name=home
 
+# TODO use name of your interface
 interface enxd03745a77fa3
   static ip_address=10.10.0.1/24
 
@@ -144,6 +158,7 @@ Append DNS and DHCP server configuration to file `/etc/dnsmasq.conf`:
 
 ```
 # run DNS and DHCP server on these interfaces
+# TODO use name of your interface
 interface=enxd03745a77fa3
 interface=wlan0
 
@@ -167,13 +182,16 @@ Reset the adapter by adding the following `udev` rule to file  `/etc/udev/rules.
 ACTION=="add", SUBSYSTEM=="usb", ENV{ID_VENDOR_ID}=="2357", ENV{ID_MODEL_ID}=="0600", RUN+="/usr/sbin/usb_modeswitch -v 2357 -p 0600 -R"
 ```
 
-## Misc Tips
+## Getting it running
 
-The command `stty size` prints number of rows and columns of the terminal. Use these commands to reset terminal size to 80 columns by 24 rows: 
-```
-$ stty columns 80
-$ stty rows 24
-```   
+When all configuration is done, do the following:
+ 
+1. Power off Raspberry Pi
+1. Plug in Internet ethernet cable to internal ethernet port
+1. Plug in local area network (LAN) ethernet cable to external ethernet adapter 
+1. Power on Raspberry Pi
+
+Devices connected to LAN should get local IP addresses in the range `10.0.0.1/24` from the DHCP server on the Raspberry Pi and be able to connect the Internet.
 
 
 ## Resources
