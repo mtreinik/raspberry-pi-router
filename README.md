@@ -1,20 +1,24 @@
 # raspberry-pi-router
 
-## How to configure a Raspberry Pi 4 as a home network router
+## How to configure a Raspberry Pi 4 as a home network router and a Wi-Fi access point
 
+Here is a how-to guide for setting up a Raspberry Pi as a home network router and a wireless Wi-Fi access point.
 
-
-## Hardware
+## Hardware requirements
 
 Required:
-- Raspberry Pi 4
-- TP-LINK USB 3.0 Gigabit Ethernet adapter UE300
+- Raspberry Pi (version 4 model B used here)
+- USB 3.0 Gigabit Ethernet adapter (TP-LINK UE300 used here)
 - microSD card used as the boot disk (minimum capacity 8 GB)
 - Power source
 
 Useful when setting up or troubleshooting:
-- Monitor with a micro HDMI cable
+- Monitor
+- Micro HDMI cable
 - USB keyboard
+
+## Setting up the system
+
 
 ### Initialize Boot disk 
 
@@ -36,9 +40,7 @@ Useful when setting up or troubleshooting:
 1. Plug in a power source to the USB-C connector.  
 
 
-## Software
-
-### Raspberry Pi Software Configuration
+### Configure Raspberry Pi Software Configuration
 
 Start the Raspberry Pi Software Configuration Tool `raspi-config`:
 ```
@@ -72,6 +74,9 @@ Select the following options:
     - **enable** predictable network interface names
     - this will make a USB ethernet adapter with MAC address `d0:37:45:a7:7f:a3` appear as interface ´enxd03745a77fa3`
 
+Reboot the Raspberry Pi after changing all the settings.
+
+
 ### Upgrade and install packages
 
 Upgrade packages to latest versions.
@@ -81,32 +86,44 @@ $ sudo apt update && sudo apt upgrade
 
 ```
 
-Install the following packages to run a DNS and DHCP server on the intranet and save and restore firewall rules:
+Install required packages:
 
 ```
-$ sudo apt install dnsmasq dnsutils netfilter-persistent iptables-persistent screen
+$ sudo apt install dnsmasq netfilter-persistent iptables-persistent hostapd  
 ```
+
+`dnsmasq` runs a DNS and DHCP server on the local area network.
+
+`netfilter-persistent` and `iptables-persistent` are used to save and restore firewall rules.
+
+`hostapd` makes the Pi act as a Wi-Fi access point
+
+Also optionally install the following packages:
+
+```
+$ sudo apt install screen dnsutils
+```
+
+`screen` is useful for running a terminal session.
 
 `dnsutils` contains the command `dig` that is useful for checking that domain name service queries work both for local and Internet addresses.   
 
-`screen` is useful for persisting a terminal connection.
-
-### Configure WiFi access point
-
-TODO
 
 ### Enable IP forwarding 
 
-Uncomment the following line on `/etc/sysctl.conf` or add file `/etc/sysctl.d/ip-routing.conf` with the following content:
+Uncomment the following line on `/etc/sysctl.conf` or add file `/etc/sysctl.d/ip-routing.conf` with the following 
+content to enable IP forwarding:
+
 ```
 net.ipv4.ip_forward=1
 ```
 
-Then run the following command to apply the new setting without rebooting: 
+Apply the new setting without rebooting: 
 
 ```
 $ sudo sysctl --system
 ```
+
 
 ### Enable masquerading
 
@@ -117,6 +134,8 @@ $ sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 $ sudo netfilter-persistent save
 ```
 
+Note: if the `iptables` command above gives an error message, you may need to reboot your Raspberry Pi. 
+
 You can check the masquerading rule and its statistics with this command: 
 
 ```
@@ -126,9 +145,10 @@ Chain POSTROUTING (policy ACCEPT 4984 packets, 331K bytes)
  5169  441K MASQUERADE  all  --  any    eth0    anywhere             anywhere
 ```
 
+
 ### Configure local area network 
 
-Find out name of the external ethernet adapter with this command, which lists all network interfaces:
+Find out name of the external ethernet adapter. This command lists all network interfaces:
 
 ```
 $ ip a
@@ -150,7 +170,7 @@ interface enxd03745a77fa3
   static ip_address=10.10.0.1/24
 
 interface wlan0
-  static ip_address=10.10.0.1/24
+  static ip_address=10.20.0.1/24
   nohook wpa_supplicant
 ```
 
@@ -158,29 +178,74 @@ Append DNS and DHCP server configuration to file `/etc/dnsmasq.conf`:
 
 ```
 # run DNS and DHCP server on these interfaces
-# TODO use name of your interface
-interface=enxd03745a77fa3
+interface=enxd03745a77fa3  # TODO use name of your interface
 interface=wlan0
 
 # use local domain .home
 domain=home
 expand-hosts
 
-# assign fixed IP to certain devices based on MAC address
-dhcp-host=ac:dc:de:ad:be:ef,10.0.0.2
+# assign fixed IP and hostname to certain devices based on MAC address
+dhcp-host=ac:dc:de:ad:be:ef,10.10.0.2,mylaptop,24h
 
-# give IP addresses from this range to other devices with lease time 24 hours
-dhcp-range=10.0.0.1,10.0.0.250,24h
+# give IP addresses from this range to devices at ethernet interface
+dhcp-range=10.10.0.100,10.10.0.250,24h
+
+# give IP addresses from this range to devices at Wi-Fi acces point
+dhcp-range=10.20.0.100,10.20.0.250,24h
+
+# name of this device
+address=/pi.home/10.10.0.1
 ```
 
-### Fix TP-LINK UE300 Mode
+### Configure Wi-Fi access point
 
-The particular USB 3.0 Ethernet adapter I used boots in USB Mass Media mode and needs to be reset before it works as an ethernet adapter. 
+Unblock Wi-Fi radio with the following command:
+```
+$ sudo rfkill unblock wlan
+```
 
-Reset the adapter by adding the following `udev` rule to file  `/etc/udev/rules.d/80-r8152.rules`:
+Run this command to see which Wi-Fi channels are available for 2 GHz and 5 GHz modes:
+
 ```
-ACTION=="add", SUBSYSTEM=="usb", ENV{ID_VENDOR_ID}=="2357", ENV{ID_MODEL_ID}=="0600", RUN+="/usr/sbin/usb_modeswitch -v 2357 -p 0600 -R"
+$ iwlist wlan0 channel
 ```
+
+Add configuration to file `/etc/hostapd/hostapd.conf`:
+
+```
+ssid=MyPiNetwork
+country_code=FI
+interface=wlan0
+
+# 5GHz mode
+hw_mode=a
+channel=36
+ieee80211n=1
+ieee80211ac=1
+macaddr_acl=0
+
+# WPA authentication
+wpa_passphrase=TODO-Wi-Fi-network-password
+auth_algs=1
+ignore_broadcast_ssid=0
+wpa=2
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+```
+
+Choose the values you want to use: 
+- `ssid`: Wi-Fi network name
+- `country_code`: [two-letter ISO 3166-1 country code](https://en.wikipedia.org/wiki/ISO_3166-1) 
+- `hw_mode`: protocol version:
+  - `a` = IEEE 802.11a (5 Ghz), 
+  - `b` = IEEE 802.11b (2.4 Ghz)
+  - `g` = IEEE 802.11g (2.4 GHz)
+- `channel`
+  - available channels depend on `hw_mode`
+- `wpa_passphrase`: Wi-Fi password
+
 
 ## Getting it running
 
@@ -194,8 +259,44 @@ When all configuration is done, do the following:
 Devices connected to LAN should get local IP addresses in the range `10.0.0.1/24` from the DHCP server on the Raspberry Pi and be able to connect the Internet.
 
 
-## Resources
+## Troubleshooting and resources
 
-- [[SOLVED] r8153 USB Network Device shows up as CD-ROM on boot](https://bbs.archlinux.org/viewtopic.php?id=228195)
+Here are some useful commands for troubleshooting:
+
+| command | explanation |
+|---------|-------------|
+| `lsusb -v` | show information on USB devices |
+| `ip a` | show addresses assigned to all network interface |
+| `iw dev wlan0 info` | show information on wireless device `wlan0` |
+| `tail -f /var/log/syslog` | show system log |
+| `systemctl status hostapd` | show status of service `hostapd` |
+| `journalctl -xe` | show log output of services started by `systemd` |
+| `sudo iwlist wlan0 scan` | show list of access points and ad-hoc cells seen by wireless interface `wlan0` |
+| `route -n` | show routing table that tells which IP addresses are routed to which interfaces |
+| `sudo tshark wlan0` | show network traffic on interface `wlan0` | 
+
+### Install driver for TP-link AC600 Wi-Fi adapter 
+
+If you want to use the external `TP-link AC600` Wi-Fi adapter, you need to download a driver from [http://downloads.fars-robotics.net/](http://downloads.fars-robotics.net/). The site contains instructions for installing the driver.
+
+Get the correct driver for your kernel version. Here is, for example, the driver for kernel version  `5.10.11-v7l-1399`:
+
+http://downloads.fars-robotics.net/wifi-drivers/8812au-drivers/8812au-5.10.11-v7l-1399.tar.gz
+ 
+ 
+### Fix TP-LINK UE300 Mode
+
+The particular USB 3.0 Ethernet adapter I used boots in USB Mass Media mode and needs to be reset before it works as an ethernet adapter. 
+
+Reset the adapter by adding the following `udev` rule to file  `/etc/udev/rules.d/80-r8152.rules`:
+```
+ACTION=="add", SUBSYSTEM=="usb", ENV{ID_VENDOR_ID}=="2357", ENV{ID_MODEL_ID}=="0600", RUN+="/usr/sbin/usb_modeswitch -v 2357 -p 0600 -R"
+```
+
+Source: [[SOLVED] r8153 USB Network Device shows up as CD-ROM on boot](https://bbs.archlinux.org/viewtopic.php?id=228195)
+
+## Miscellaneous links
+
+- [Get started with Raspberry Pi](https://projects.raspberrypi.org/en/pathways/getting-started-with-raspberry-pi)
 - [Setting up a Raspberry Pi as a routed wireless access point
 ](https://www.raspberrypi.org/documentation/configuration/wireless/access-point-routed.md)
