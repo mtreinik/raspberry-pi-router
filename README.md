@@ -4,6 +4,13 @@
 
 Here is a how-to guide for setting up a Raspberry Pi as a home network router and a wireless Wi-Fi access point.
 
+The Raspberry Pi uses the following configuration
+- Built-in ethernet connector for connecting to the Internet
+- A USB ethernet adapter for connection to the local area network
+- Built-in Wi-Fi for creating the wireless access point.
+
+![network configuration](https://raw.githubusercontent.com/mtreinik/raspberry-pi-router/main/network.png)
+
 ## Hardware requirements
 
 Required:
