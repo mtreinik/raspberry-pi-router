@@ -263,7 +263,9 @@ When all configuration is done, do the following:
 1. Plug in local area network (LAN) ethernet cable to external ethernet adapter 
 1. Power on Raspberry Pi
 
-Devices connected to LAN should get local IP addresses in the range `10.0.0.1/24` from the DHCP server on the Raspberry Pi and be able to connect the Internet.
+Devices connected to LAN should get local IP addresses in the range `10.10.0.1/24` from the DHCP server on the Raspberry Pi.
+Devices connected to the Wi-Fi Access Point should get IP addresses in the range `10.20.0.1/24`.
+All devices should be able to connect to the Internet.
 
 
 ## Troubleshooting and resources
