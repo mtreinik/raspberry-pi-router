@@ -283,6 +283,9 @@ Here are some useful commands for troubleshooting:
 | `sudo iwlist wlan0 scan` | show list of access points and ad-hoc cells seen by wireless interface `wlan0` |
 | `route -n` | show routing table that tells which IP addresses are routed to which interfaces |
 | `sudo tshark wlan0` | show network traffic on interface `wlan0` | 
+| `speedtest-cli` | test internet bandwidth using speedtest.net |
+| `bmon` | monitor network bandwidth | 
+| `sudo iftop` | display bandwidth usage by host |
 
 ### Install driver for TP-link AC600 Wi-Fi adapter 
 
