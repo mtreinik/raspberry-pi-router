@@ -285,7 +285,8 @@ Here are some useful commands for troubleshooting:
 | `sudo tshark wlan0` | show network traffic on interface `wlan0` | 
 | `speedtest-cli` | test internet bandwidth using speedtest.net |
 | `bmon` | monitor network bandwidth | 
-| `sudo iftop` | display bandwidth usage by host |
+| `sudo iftop -P -f 'not port 22 and not port 443'` | display bandwidth usage by host (the example of a filter rule excludes SSH and HTTPS packets) |
+| `sudo trafshow 'not port 22 and not port 443'` | monitor network traffic: like iftop, but can also show contents of traffic |
 
 ### Install driver for TP-link AC600 Wi-Fi adapter 
 
